@@ -11,11 +11,14 @@ import { ensureDemoContent } from '../db/bootstrap.js';
 async function withLock(key: number, fn: () => Promise<unknown>) {
   const c = await pool.connect();
   try {
-    const { rows } = await c.query<{ ok: boolean }>('SELECT pg_try_advisory_lock($1) AS ok', [key]);
-    if (!rows[0].ok) return;
-    try { await fn(); } finally { await c.query('SELECT pg_advisory_unlock($1)', [key]); }
+    await c.query('BEGIN');
+    const { rows } = await c.query<{ ok: boolean }>('SELECT pg_try_advisory_xact_lock($1) AS ok', [key]);
+    if (rows[0].ok) await fn();
+    await c.query('COMMIT');
   } catch (e) {
+    await c.query('ROLLBACK').catch(() => {});
     console.error('[planificateur]', e);
+    throw e;
   } finally {
     c.release();
   }
@@ -23,10 +26,15 @@ async function withLock(key: number, fn: () => Promise<unknown>) {
 
 const timers: NodeJS.Timeout[] = [];
 
+export async function runSchedulerTick() {
+  await withLock(71001, fireDueReminders);
+  await withLock(71002, async () => { await collectDue(); await ensureDemoContent(); });
+}
+
 export function startScheduler() {
   if (!config.schedulerEnabled) { console.log('[planificateur] désactivé (SCHEDULER_ENABLED=false)'); return; }
-  const reminders = () => withLock(71001, fireDueReminders);
-  const collect = () => withLock(71002, async () => { await collectDue(); await ensureDemoContent(); });
+  const reminders = () => withLock(71001, fireDueReminders).catch(e => console.error('[rappels]', e));
+  const collect = () => withLock(71002, async () => { await collectDue(); await ensureDemoContent(); }).catch(e => console.error('[collecte]', e));
   reminders();
   setTimeout(collect, 2000);
   timers.push(setInterval(reminders, config.reminderTickSeconds * 1000));

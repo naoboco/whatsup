@@ -2,7 +2,7 @@ import pg from 'pg';
 import { config } from '../config.js';
 
 // timestamptz -> ISO string handled by pg as Date; we serialize via toISOString in JSON.
-export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10 });
+export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: process.env.VERCEL ? 4 : 10 });
 
 export async function query<T extends pg.QueryResultRow = any>(text: string, params: unknown[] = []) {
   return pool.query<T>(text, params);

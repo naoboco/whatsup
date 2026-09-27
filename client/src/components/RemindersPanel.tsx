@@ -13,6 +13,11 @@ export default function RemindersPanel({ onClose, toast }: { onClose: () => void
   const load = useCallback(() => api.reminders('active').then(setRows).catch(e => toast({ title: 'Erreur', body: e.message, tone: 'error' })), [toast]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => onServerEvent(e => { if (e.type === 'reminder:updated') load(); }), [load]);
+  useEffect(() => {
+    if (import.meta.env.VITE_SERVERLESS !== 'true') return;
+    const t = window.setInterval(load, 20_000);
+    return () => window.clearInterval(t);
+  }, [load]);
   return (
     <aside className="side-panel" aria-label="Rappels programmés">
       <header><h2>Rappels programmés</h2><button className="icon-btn" onClick={onClose} aria-label="Fermer"><X size={18} /></button></header>

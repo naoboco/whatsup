@@ -7,9 +7,10 @@ import { bus } from '../services/events.js';
  * et autorisées (communiqués officiels, API publique Lever du site carrières, index ouvert GDELT).
  */
 export async function bootstrap() {
-  const done = await query(`SELECT 1 FROM settings WHERE key = 'bootstrapped'`);
-  if (done.rowCount) return;
   await tx(async c => {
+    await c.query('SELECT pg_advisory_xact_lock(71000)');
+    const done = await c.query(`SELECT 1 FROM settings WHERE key = 'bootstrapped'`);
+    if (done.rowCount) return;
     await c.query(`INSERT INTO conversations (slug, name, kind, description, accent, pinned) VALUES ('rappels', 'Rappels', 'reminders', 'Vos rappels, en langage naturel', '#F2C14E', true) ON CONFLICT (slug) DO NOTHING`);
     const mob = await c.query<{ id: string }>(
       `INSERT INTO conversations (slug, name, kind, description, accent) VALUES ('mobileye', 'Mobileye', 'company', 'Conduite autonome et ADAS — Jérusalem', '#5B8DEF')

@@ -85,6 +85,15 @@ export default function ChatView({ id, listItem, onBack, onOpen, toast, status, 
     if (e.type === 'reminder:updated' && isReminders) loadLatest();
   }), [id, loadLatest, loadDetail, isReminders]);
 
+  useEffect(() => {
+    if (import.meta.env.VITE_SERVERLESS !== 'true') return;
+    const poll = () => { loadLatest(); loadDetail(); };
+    const t = window.setInterval(poll, 20_000);
+    const visible = () => { if (document.visibilityState === 'visible') poll(); };
+    document.addEventListener('visibilitychange', visible);
+    return () => { window.clearInterval(t); document.removeEventListener('visibilitychange', visible); };
+  }, [loadLatest, loadDetail]);
+
   // Défilement : bas de la conversation (ou séparateur des non-lus) au premier affichage, conservation de la position au chargement de l'historique
   useLayoutEffect(() => {
     const el = scroller.current;

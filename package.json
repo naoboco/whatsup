@@ -7,8 +7,18 @@
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix client run build",
+    "build:deploy": "VITE_SERVERLESS=true npm --prefix client run build && node scripts/copy-public.mjs",
     "start": "npm --prefix server start",
     "test": "npm --prefix server test",
     "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "fast-xml-parser": "^5.11.1",
+    "luxon": "^3.7.2",
+    "pg": "^8.23.0",
+    "web-push": "^3.6.7",
+    "zod": "^4.6.5"
   }
 }

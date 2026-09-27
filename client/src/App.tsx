@@ -23,6 +23,8 @@ export default function App() {
   const [modal, setModal] = useState<'new' | 'settings' | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [online, setOnline] = useState(true);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
@@ -33,8 +35,8 @@ export default function App() {
   }, []);
 
   const loadList = useCallback(async () => {
-    try { setConvs(await api.conversations(q, filter)); setListError(null); }
-    catch (e: any) { setListError(e.message); }
+    try { setConvs(await api.conversations(q, filter)); setListError(null); setAuthRequired(false); }
+    catch (e: any) { if (e.status === 401) { setAuthRequired(true); setListError('Code d’accès incorrect ou manquant.'); } else setListError(e.message); }
   }, [q, filter]);
 
   const loadStatus = useCallback(() => { api.status().then(setStatus).catch(() => {}); }, []);
@@ -58,6 +60,7 @@ export default function App() {
 
   // Temps réel : flux SSE du serveur
   useEffect(() => {
+    if (import.meta.env.VITE_SERVERLESS === 'true') return;
     let es: EventSource | null = null, retry: number | undefined;
     const connect = () => {
       es = new EventSource(api.eventsUrl());
@@ -68,6 +71,15 @@ export default function App() {
     connect();
     return () => { es?.close(); clearTimeout(retry); };
   }, []);
+
+  useEffect(() => {
+    if (import.meta.env.VITE_SERVERLESS !== 'true' || authRequired) return;
+    const poll = () => { loadList(); loadStatus(); };
+    const t = window.setInterval(poll, 20_000);
+    const visible = () => { if (document.visibilityState === 'visible') poll(); };
+    document.addEventListener('visibilitychange', visible);
+    return () => { window.clearInterval(t); document.removeEventListener('visibilitychange', visible); };
+  }, [loadList, loadStatus, authRequired]);
 
   useEffect(() => onServerEvent((e: ServerEvent) => {
     if (e.type === 'notify') {
@@ -88,6 +100,26 @@ export default function App() {
   }, [open]);
 
   const current = convs?.find(c => c.id === selected) ?? null;
+
+  if (authRequired) return (
+    <div className="access-page"><form className="access-card" onSubmit={e => {
+      e.preventDefault();
+      localStorage.setItem('vigie_token', accessCode.trim());
+      setAccessCode('');
+      setListError(null);
+      loadList();
+      loadStatus();
+      api.preferences().then(p => { setPrefs(p); setTimeZone(p.timezone); }).catch(() => {});
+    }}>
+      <Lighthouse size={62} />
+      <h1>Vigie</h1>
+      <p>Entrez votre code d’accès pour ouvrir votre veille et vos rappels.</p>
+      <label htmlFor="access-code">Code d’accès</label>
+      <input id="access-code" type="password" autoComplete="current-password" value={accessCode} onChange={e => setAccessCode(e.target.value)} required />
+      {listError && <p className="access-error" role="alert">{listError}</p>}
+      <button className="btn primary" type="submit">Ouvrir l’application</button>
+    </form></div>
+  );
 
   return (
     <div className={`app ${selected ? 'has-selection' : ''}`}>
