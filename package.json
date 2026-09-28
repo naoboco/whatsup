@@ -7,7 +7,7 @@
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix client run build",
-    "build:deploy": "VITE_SERVERLESS=true npm --prefix client run build && node scripts/copy-public.mjs",
+    "build:deploy": "npm --prefix client ci && VITE_SERVERLESS=true npm --prefix client run build && node scripts/copy-public.mjs",
     "start": "npm --prefix server start",
     "test": "npm --prefix server test",
     "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck"
