@@ -46,7 +46,7 @@ export default function Sidebar(p: {
           <button className="icon-btn" onClick={p.onSettings} aria-label="Préférences" title="Préférences"><Cog size={20} /></button>
         </div>
       </header>
-      {!p.online && <div className="banner warn"><WifiOff size={14} /> Connexion temps réel interrompue — reconnexion…</div>}
+      {!p.online && <div className="banner warn"><WifiOff size={14} /> {navigator.onLine ? 'Connexion temps réel interrompue — reconnexion…' : 'Hors ligne — synchronisation à la reconnexion'}</div>}
       {p.status && !p.status.openai && (
         <div className="banner subtle">Rappels : analyseur local actif (aucune clé OpenAI).</div>
       )}

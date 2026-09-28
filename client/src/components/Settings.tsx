@@ -4,8 +4,8 @@ import type { Preferences, Status } from '../lib/types';
 import { enablePush, disablePush, currentSubscription, pushSupported } from '../lib/push';
 import { Modal, Toggle } from './ui';
 
-export default function Settings({ prefs, status, onClose, onSaved, onStatus, toast }: {
-  prefs: Preferences; status: Status; onClose: () => void; onSaved: (p: Preferences) => void; onStatus: () => void; toast: (t: any) => void;
+export default function Settings({ prefs, status, onClose, onSaved, onStatus, toast, onInstall }: {
+  prefs: Preferences; status: Status; onClose: () => void; onSaved: (p: Preferences) => void; onStatus: () => void; toast: (t: any) => void; onInstall?: () => void;
 }) {
   const [p, setP] = useState(prefs);
   const [pushOn, setPushOn] = useState<boolean | null>(null);
@@ -29,6 +29,13 @@ export default function Settings({ prefs, status, onClose, onSaved, onStatus, to
   return (
     <Modal title="Préférences" onClose={onClose} wide>
       <div className="form">
+        <fieldset>
+          <legend>Installer Vigie</legend>
+          {onInstall ? <button className="btn primary" onClick={onInstall}>Installer sur cet appareil</button> : (
+            <p className="hint">Sur iPhone, ouvrez le menu Partager puis « Sur l’écran d’accueil ». Sur ordinateur ou Android, utilisez « Installer l’application » dans le menu du navigateur.</p>
+          )}
+          <p className="hint">L’interface s’ouvre hors ligne. Les conversations et rappels sont chargés depuis le serveur dès que la connexion revient.</p>
+        </fieldset>
         <fieldset>
           <legend>Notifications sur cet appareil</legend>
           {!pushSupported() ? <p className="hint">Ce navigateur ne gère pas les notifications push. Les bandeaux dans l’application restent actifs.</p> : (

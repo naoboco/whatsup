@@ -11,6 +11,7 @@ import { Toasts, type Toast } from './components/Toasts';
 import { Lighthouse } from './components/ui';
 
 const readHash = () => /^#\/c\/([0-9a-f-]{36})/.exec(location.hash)?.[1] ?? null;
+type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 
 export default function App() {
   const [convs, setConvs] = useState<Conversation[] | null>(null);
@@ -22,7 +23,8 @@ export default function App() {
   const [prefs, setPrefs] = useState<Preferences | null>(null);
   const [modal, setModal] = useState<'new' | 'settings' | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(navigator.onLine);
+  const [installPrompt, setInstallPrompt] = useState<InstallPrompt | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const selectedRef = useRef(selected);
@@ -42,6 +44,20 @@ export default function App() {
   const loadStatus = useCallback(() => { api.status().then(setStatus).catch(() => {}); }, []);
 
   useEffect(() => { const t = setTimeout(loadList, q ? 250 : 0); return () => clearTimeout(t); }, [loadList, q]);
+  useEffect(() => {
+    const offline = () => setOnline(false);
+    const back = () => { setOnline(true); loadList(); loadStatus(); };
+    window.addEventListener('offline', offline);
+    window.addEventListener('online', back);
+    return () => { window.removeEventListener('offline', offline); window.removeEventListener('online', back); };
+  }, [loadList, loadStatus]);
+  useEffect(() => {
+    const offer = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPrompt); };
+    const installed = () => setInstallPrompt(null);
+    window.addEventListener('beforeinstallprompt', offer);
+    window.addEventListener('appinstalled', installed);
+    return () => { window.removeEventListener('beforeinstallprompt', offer); window.removeEventListener('appinstalled', installed); };
+  }, []);
   useEffect(() => {
     loadStatus();
     api.preferences().then(p => { setPrefs(p); setTimeZone(p.timezone); }).catch(() => {});
@@ -146,7 +162,12 @@ export default function App() {
       {modal === 'settings' && prefs && status && (
         <Settings prefs={prefs} status={status} onClose={() => setModal(null)}
           onSaved={p => { setPrefs(p); setTimeZone(p.timezone); toast({ title: 'Préférences enregistrées', body: '', tone: 'info' }); }}
-          onStatus={loadStatus} toast={toast} />
+          onStatus={loadStatus} toast={toast} onInstall={installPrompt ? async () => {
+            await installPrompt.prompt();
+            const choice = await installPrompt.userChoice;
+            setInstallPrompt(null);
+            if (choice.outcome === 'accepted') toast({ title: 'Vigie installée', body: 'Retrouvez-la depuis votre écran d’accueil.', tone: 'info' });
+          } : undefined} />
       )}
       <Toasts items={toasts} onOpen={id => open(id)} onClose={id => setToasts(ts => ts.filter(t => t.id !== id))} />
     </div>
