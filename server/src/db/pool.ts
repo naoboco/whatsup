@@ -1,8 +1,19 @@
 import pg from 'pg';
 import { config } from '../config.js';
+import { supabaseCa } from './supabaseCa.js';
 
-// timestamptz -> ISO string handled by pg as Date; we serialize via toISOString in JSON.
-export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: process.env.VERCEL ? 4 : 10 });
+const databaseUrl = new URL(config.databaseUrl);
+const sslMode = databaseUrl.searchParams.get('sslmode');
+databaseUrl.searchParams.delete('sslmode');
+const supabaseHost = /(^|\.)pooler\.supabase\.com$/.test(databaseUrl.hostname) || /(^|\.)supabase\.co$/.test(databaseUrl.hostname);
+
+export const pool = new pg.Pool({
+  connectionString: databaseUrl.toString(),
+  max: process.env.VERCEL ? 4 : 10,
+  ssl: sslMode && sslMode !== 'disable'
+    ? { rejectUnauthorized: true, ...(supabaseHost ? { ca: supabaseCa } : {}) }
+    : undefined,
+});
 
 export async function query<T extends pg.QueryResultRow = any>(text: string, params: unknown[] = []) {
   return pool.query<T>(text, params);
