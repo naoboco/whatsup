@@ -1,14 +1,33 @@
 {
   "name": "vigie",
   "private": true,
+  "type": "module",
   "scripts": {
     "install:all": "npm --prefix server install && npm --prefix client install",
     "db:up": "docker compose up -d db",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix client run build",
+    "build:deploy": "npm --prefix client ci && VITE_SERVERLESS=true npm --prefix client run build && node scripts/copy-public.mjs",
     "start": "npm --prefix server start",
     "test": "npm --prefix server test",
     "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "fast-xml-parser": "^5.11.1",
+    "luxon": "^3.7.2",
+    "pg": "^8.23.0",
+    "web-push": "^3.6.7",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/luxon": "^3.7.5",
+    "@types/node": "^26.6.3",
+    "@types/pg": "^8.23.1",
+    "@types/web-push": "^3.6.4",
+    "typescript": "^5.9.3"
   }
 }

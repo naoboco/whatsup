@@ -28,6 +28,12 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 15px; -webkit-font-smoothing: antialiased; }
+.access-page { min-height: 100dvh; display: grid; place-items: center; padding: 20px; }
+.access-card { width: min(420px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 30px; display: grid; gap: 14px; justify-items: start; box-shadow: var(--shadow); }
+.access-card h1 { font: 32px var(--font-brand); margin: 0; }
+.access-card p { line-height: 1.5; margin: 0; color: var(--muted); }
+.access-card label { font-weight: 600; font-size: 14px; }
+.access-card .access-error { color: var(--danger); font-size: 13px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--news); }
 .muted { color: var(--muted); } .small { font-size: 13px; }

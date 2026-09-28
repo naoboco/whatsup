@@ -14,8 +14,9 @@ export async function initPush() {
     const r = await query<{ value: any }>(`SELECT value FROM settings WHERE key = 'vapid'`);
     if (r.rows[0]) vapid = r.rows[0].value;
     else {
-      vapid = webpush.generateVAPIDKeys();
-      await query(`INSERT INTO settings(key, value) VALUES ('vapid', $1) ON CONFLICT DO NOTHING`, [JSON.stringify(vapid)]);
+      const generated = webpush.generateVAPIDKeys();
+      await query(`INSERT INTO settings(key, value) VALUES ('vapid', $1) ON CONFLICT DO NOTHING`, [JSON.stringify(generated)]);
+      vapid = (await query<{ value: any }>(`SELECT value FROM settings WHERE key = 'vapid'`)).rows[0].value;
       console.log('[push] clés VAPID générées et enregistrées en base');
     }
   }
